@@ -102,6 +102,7 @@ def analyzer_node(state: InsuranceState):
     2. Missing Info: If data is missing, say: "I'm sorry, the provided documents do not contain this information."
     3. Citations: Every claim MUST be cited as [Source: Filename, Page X].
     4. Scope Guardrail: If unrelated to insurance, state: "Outside professional audit scope."
+    5. Internet Trigger: If 'use_internet' is True and the PDF fragments do not contain the SPECIFIC FACT requested (e.g., a list of names, a specific % or a fee), you MUST set 'needs_search' to True and generate a 'search_query'. Do not simply refer the user to a website if you have the power to search it.
 
     USER PROFILE: 
     - Budget: {state['budget']}
@@ -220,7 +221,7 @@ if query := st.chat_input("Verify policy rules..."):
         st.markdown(query)
 
     with st.chat_message("assistant"):
-        ui_status = st.status("Initializing Audit...")
+        ui_status = st.status("🔍 Initializing Audit...")
         
         inputs = {
             "query": query, "relevant_chunks": "", "budget": user_budget, 
@@ -230,12 +231,20 @@ if query := st.chat_input("Verify policy rules..."):
         }
 
         final_out = ""
+        # We iterate through the Graph stream
         for output in app.stream(inputs):
             for node, data in output.items():
-                if node == "searcher": ui_status.update(label="🔍 Performing Web Audit...")
-                if node == "retriever": ui_status.update(label="📖 Searching Policy Fragments...")
-                if node == "analyzer" and not data.get("needs_search"):
-                    final_out = data['final_response']
+                if node == "retriever":
+                    ui_status.update(label="📖 Searching Policy Fragments...")
+                
+                if node == "analyzer":
+                    if data.get("needs_search"):
+                        ui_status.update(label="⚠️ No result found in PDFs. Switching to Internet...")
+                    else:
+                        final_out = data.get('final_response', "")
+
+                if node == "searcher":
+                    ui_status.update(label="🌐 Searching live web data for: " + data.get("query", query))
         
         ui_status.update(label="✅ Audit Complete", state="complete")
         st.markdown(final_out)
