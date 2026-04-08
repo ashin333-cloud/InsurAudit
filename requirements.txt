@@ -4,5 +4,5 @@ langgraph
 chromadb
 pymupdf
 sentence-transformers
-duckduckgo_search
+DDGS
 protobuf==4.25.3
