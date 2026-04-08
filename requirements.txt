@@ -6,3 +6,4 @@ pymupdf
 sentence-transformers
 DDGS
 protobuf==4.25.3
+torchvision
