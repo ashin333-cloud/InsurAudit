@@ -13,6 +13,13 @@ from google.genai import types
 from langgraph.graph import StateGraph, END
 from ddgs import DDGS
 
+try:
+    # This automatically pulls from your secrets.toml or Cloud Secrets
+    API_KEY = st.secrets["GOOGLE_API_KEY"]
+    client = genai.Client(api_key=API_KEY)
+except Exception as e:
+    st.error("Missing GOOGLE_API_KEY in Streamlit Secrets!")
+    st.stop()
 # --- INITIALIZATION ---
 warnings.filterwarnings("ignore", message="datetime.datetime.utcnow")
 
@@ -68,25 +75,36 @@ def retrieval_node(state: InsuranceState):
     return {"relevant_chunks": context}
 
 def analyzer_node(state: InsuranceState):
+    """Core logic: Audits PDF content using the pre-initialized global client."""
+    
     prompt = f"""
     SYSTEM: You are a "Context-Only" Senior Insurance Auditor (Alternative to Ditto/Beshak).
+    
     STRICT RULES:
-    1. Answer ONLY using 'PDF FRAGMENTS' or 'WEB SEARCH DATA'. 
-    2. If info is missing, you MUST say: "I'm sorry, the provided documents do not contain this information."
-    3. Cite page numbers for every PDF-based claim (e.g., [Source: Filename, Page 5]).
-    4. If 'use_internet' is True and info is missing, set 'needs_search' to True.
-    5. If the query is completely unrelated to insurance/medical field, refuse politely.
+    1. Answer ONLY using the provided 'PDF FRAGMENTS' or 'WEB SEARCH DATA'.
+    2. If the required information is missing from both sources, you MUST say: "I'm sorry, the provided documents and web search data do not contain this information."
+    3. Cite the source filename and page numbers for every PDF-based claim (e.g., [Source: HDFC_Brochure.pdf, Page 5]).
+    4. For Web Search data, cite it as [Source: Web Search Data].
+    5. If 'use_internet' is True and information is missing in the PDF, set 'needs_search' to True and generate a 'search_query' to find the exact missing data.
+    6. If the user query is completely unrelated to insurance, healthcare, or medical policies, politely inform the user that the query falls outside the scope of this professional insurance audit.
+    7. Ensure mathematical accuracy when calculating benefits like 'Plus' or 'Secure' multipliers.
 
-    PDF FRAGMENTS: {state['relevant_chunks']}
-    WEB SEARCH DATA: {state['search_results']}
-    QUERY: {state['query']}
+    PDF FRAGMENTS:
+    {state['relevant_chunks']}
+
+    WEB SEARCH DATA:
+    {state['search_results']}
+
+    USER PROFILE: 
+    Budget: {state['budget']}, Requirements: {state['requirements']}
+
+    QUERY: 
+    {state['query']}
     """
-    
-    api_key = st.session_state.get("api_key", "")
-    client = genai.Client(api_key=api_key)
-    
+
+    # Using the global 'client' initialized at the top level via st.secrets
     response = client.models.generate_content(
-        model="gemini-3.1-flash-lite-preview", # KEPT AS IS
+        model="gemini-3.1-flash-lite-preview", 
         contents=prompt,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -102,7 +120,9 @@ def analyzer_node(state: InsuranceState):
             }
         )
     )
+
     res = json.loads(response.text)
+    
     return {
         "final_response": res['answer'],
         "citations": res['citations'],
