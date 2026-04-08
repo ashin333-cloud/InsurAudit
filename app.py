@@ -50,33 +50,33 @@ class InsuranceState(TypedDict):
 
 # --- 2. GRAPH NODES ---
 def retrieval_node(state: InsuranceState):
-    """Semantic search + Page-X metadata filtering."""
     query = state['query'].lower()
     try:
         collection = chroma_client.get_collection(name="insurance_vault", embedding_function=default_ef)
     except Exception:
         return {"relevant_chunks": "⚠️ NO DOCUMENTS INGESTED."}
 
-    # "Go to Page X" Regex
-    page_match = re.search(r'(?:page|pg|p\.?)\s*(\d+)', query)
-    
-    if page_match:
-        target_page = int(page_match.group(1))
-        results = collection.get(where={"page": target_page}, limit=5)
-    else:
-        results = collection.query(query_texts=[state['query']], n_results=12)
+    # INCREASE n_results to 25 to ensure we catch the Brochure too
+    results = collection.query(
+        query_texts=[state['query']], 
+        n_results=25  # Expanded horizon
+    )
 
     context = ""
-    docs = results.get('documents', [])
-    metas = results.get('metadatas', [])
+    docs = results.get('documents', [[]])[0]
+    metas = results.get('metadatas', [[]])[0]
 
-    if docs and isinstance(docs[0], list):
-        docs, metas = docs[0], metas[0]
-
+    # TRACKING: Let's see which files we found
+    found_sources = set()
+    
     for i in range(len(docs)):
         source = metas[i]['source']
+        found_sources.add(source)
         page = metas[i]['page']
         context += f"--- SOURCE: {source} (Page {page}) ---\n{docs[i]}\n\n"
+    
+    # DEBUG PRINT (Visible in your Streamlit terminal/logs)
+    print(f"Sources retrieved for query: {found_sources}")
         
     return {"relevant_chunks": context}
 
