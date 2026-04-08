@@ -1,0 +1,7 @@
+streamlit
+google-genai
+langgraph
+chromadb
+pymupdf
+sentence-transformers
+duckduckgo_search
