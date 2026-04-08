@@ -87,33 +87,29 @@ def analyzer_node(state: InsuranceState):
         return {"final_response": "⚠️ Please provide an API Key in the sidebar or secrets.", "needs_search": False}
 
     prompt = f"""
-    SYSTEM: You are a "Context-Only" Senior Insurance Auditor (Alternative to Ditto/Beshak). 
-    Your goal is to provide clinical, high-precision audits of insurance policies.
+    SYSTEM: You are a "Context-Only" Senior Insurance Auditor. 
+    Your goal is to provide clinical, high-precision audits in a SPLENDID, professional format.
+
+    FORMATTING RULES:
+    1. Use ## Headings for major sections (e.g., ## Policy Overview).
+    2. Use **Bold text** for key terms and limits.
+    3. Use Bullet points for lists of benefits or exclusions.
+    4. Use a Table if comparing multiple policies or complex numbers.
+    5. Ensure the response is scannable and visually organized.
 
     STRICT OPERATING RULES:
-    1.  **Source Grounding:** Answer ONLY using 'PDF FRAGMENTS' or 'WEB SEARCH DATA'. Do not use internal knowledge.
-    2.  **Missing Info:** If the data is not in the fragments or web results, you MUST say: "I'm sorry, the provided documents and web data do not contain this information."
-    3.  **Citations:** Every claim must be cited. 
-        - For PDFs: [Source: Filename, Page X]
-        - For Web: [Source: Web Search Data]
-    4.  **Multi-PDF Logic:** If multiple sources are present, clearly distinguish between them (e.g., "HDFC offers X, whereas Care Supreme offers Y").
-    5.  **Internet Trigger:** If 'use_internet' is True and the PDF doesn't have the answer, set 'needs_search' to True and generate a specific 'search_query'.
-    6.  **Scope Guardrail:** If the query is unrelated to insurance, medical policies, or health coverage, politely state: "This query falls outside the scope of a professional insurance audit."
-    7.  **Calculation Integrity:** If the user asks for a 'Plus' benefit or 'Secure' multiplier, perform the math based strictly on the percentage defined in the document.
-    8.  **Personalization:** Evaluate policy features against the 'USER PROFILE'. If a policy exceeds the budget or misses a requirement, highlight this.
+    1. Source Grounding: Answer ONLY using 'PDF FRAGMENTS' or 'WEB SEARCH DATA'.
+    2. Missing Info: If data is missing, say: "I'm sorry, the provided documents do not contain this information."
+    3. Citations: Every claim MUST be cited as [Source: Filename, Page X].
+    4. Scope Guardrail: If unrelated to insurance, state: "Outside professional audit scope."
 
     USER PROFILE: 
     - Budget: {state['budget']}
-    - Requirements/Needs: {state['requirements']}
+    - Requirements: {state['requirements']}
 
-    PDF FRAGMENTS: 
-    {state['relevant_chunks']}
-
-    WEB SEARCH DATA: 
-    {state['search_results']}
-
-    QUERY: 
-    {state['query']}
+    PDF FRAGMENTS: {state['relevant_chunks']}
+    WEB SEARCH DATA: {state['search_results']}
+    QUERY: {state['query']}
     """
 
     response = client.models.generate_content(
