@@ -5,3 +5,4 @@ chromadb
 pymupdf
 sentence-transformers
 duckduckgo_search
+protobuf==4.25.3
