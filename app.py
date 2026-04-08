@@ -101,8 +101,8 @@ def analyzer_node(state: InsuranceState):
     1. Source Grounding: Answer ONLY using 'PDF FRAGMENTS' or 'WEB SEARCH DATA'.
     2. Missing Info: If data is missing, say: "I'm sorry, the provided documents do not contain this information."
     3. Citations: Every claim MUST be cited as [Source: Filename, Page X].
-    4. HARD Scope Guardrail: - ALLOWED: Policy summaries, coverage explanations, medical limits, and **insurer performance metrics (e.g., Claim Settlement Ratios, Solvency Ratios, Network Hospital lists).**
-       - FORBIDDEN: Biographies, movies, general trivia, or unrelated business advice.
+    4. HARD Scope Guardrail:
+       - FORBIDDEN: Eg; Biographies, movies, general trivia, or unrelated business advice.
        - REJECTION LOGIC: Use the "Outside professional audit scope" phrase ONLY for truly unrelated topics.
     5. Internet Trigger: If 'use_internet' is True and the PDF fragments do not contain the SPECIFIC FACT requested (e.g., a list of names, a specific % or a fee), you MUST set 'needs_search' to True and generate a 'search_query'. Do not simply refer the user to a website if you have the power to search it.
     
