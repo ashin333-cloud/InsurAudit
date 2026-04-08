@@ -113,7 +113,7 @@ def analyzer_node(state: InsuranceState):
     """
 
     response = client.models.generate_content(
-        model="gemma-3n-e4b-it",
+        model="gemma-3-4b-it",
         contents=prompt,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
